@@ -1,0 +1,129 @@
+package com.epa.business
+
+import android.annotation.SuppressLint
+import android.os.Bundle
+import android.view.ViewGroup
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import android.widget.VideoView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
+import com.epa.business.ui.theme.EPATheme
+import kotlinx.coroutines.delay
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            EPATheme {
+                MainActivityContent()
+            }
+        }
+    }
+}
+
+@Composable
+fun MainActivityContent() {
+    val url = "https://epabusiness.com"
+    var showWebView by remember { mutableStateOf(false) }
+
+    SplashScreen(url = url) {
+        showWebView = true // Callback to indicate SplashScreen is complete
+    }
+
+    if (showWebView) {
+        WebView(
+            url = url,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+fun SplashScreen(url: String, onSplashComplete: () -> Unit) {
+    var showSplashScreen by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(4000) // Wait for 4 seconds
+        showSplashScreen = false // Hide splash screen after 4 seconds
+        onSplashComplete() // Callback to notify that splash screen is complete
+    }
+
+    if (showSplashScreen) {
+        // Display splash video
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                VideoView(context).apply {
+                    setVideoPath("android.resource://${context.packageName}/raw/epa_splash")
+                    start()
+                    setOnCompletionListener {
+                        showSplashScreen = false
+                        onSplashComplete() // Ensure splash is complete after video ends
+                    }
+                }
+            }
+        )
+    }
+}
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun WebView(
+    url: String,
+    modifier: Modifier = Modifier,
+    onWebViewCreated: (WebView) -> Unit = {}
+) {
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                webViewClient = WebViewClient()
+                loadUrl(url)
+                onWebViewCreated(this)
+                // Set layout parameters to fill the parent
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+        }
+    )
+}
+
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_epa_icon"
+        android:label="EPA Business"
+        android:roundIcon="@mipmap/ic_epa_icon_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.EPA"
+        tools:targetApi="31">
+        <activity
+            android:name="com.epa.business.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EPA">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
